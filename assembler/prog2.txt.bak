@@ -1,0 +1,1272 @@
+RST X0,NP
+RST X1,NP
+RST X2,NP
+RST X3,NP
+RST X4,NP
+RST X5,NP
+RST X6,NP
+RST X7,NP
+// Set address pointers to memory locations
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X7 = &mem[60]
+// X6 = &mem[70]
+ADDI X5,1
+ROT X5,NP
+ROT X5,NP
+ROT X5,NP
+ADDI X5,-2
+ADDI X7,1
+ROT X7,NP
+ROT X7,NP
+ADDI X7,-4
+MOV X6,X7
+ADDI X6,3
+ADDI X6,3
+ADDI X6,3
+ADDI X6,1
+// Load ENCODED MSW and LSW
+// X0 = E_LSW
+// X1 = E_MSW
+// X5 = &mem[30]
+// OUTER LOOP BACK HERE
+RST X2,NP
+LDR X0,X5
+ADDI X5,1
+LDR X1,X5
+ADDI X5,-1
+// Create masks to extract parity bits
+// X3 = p8 :: X2 = 00000001
+// X6 = &mem[70]
+// X0 = E_LSW
+// X1 = E_MSW
+MOV X3,X1
+ADDI X2,1
+AND X3,X2
+STR X3,X6
+// X3 = p4 :: X2 = 00010000
+// X6 = &mem[71]
+// X0 = E_LSW
+// X1 = E_MSW
+MOV X3,X0
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+AND X3,X2
+ROT X3,NP
+ROT X3,NP
+ROT X3,NP
+ROT X3,NP
+ADDI X6,1
+STR X3,X6
+// X3 = p2 :: X2 = 00000100
+// X6 = &mem[72]
+// X0 = E_LSW
+// X1 = E_MSW
+MOV X3,X0
+ROT X2,NP
+ROT X2,NP
+AND X3,X2
+ROT X3,NP
+ROT X3,NP
+ADDI X6,1
+STR X3,X6
+// X3 = p1 :: X2 = 00000010
+// X6 = &mem[73]
+// X0 = E_LSW
+// X1 = E_MSW
+MOV X3,X0
+ROT X2,NP
+AND X3,X2
+ROT X3,NP
+ADDI X6,1
+STR X3,X6
+// X3 = p0 :: X2 = 00000001
+// X6 = &mem[74]
+// X0 = E_LSW
+// X1 = E_MSW
+MOV X3,X0
+ROT X2,NP
+AND X3,X2
+ADDI X6,1
+STR X3,X6
+// Reset X6 to &mem[70]
+// Reset other registers
+// X0 = E_LSW
+// X1 = E_MSW
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = &mem[60]
+ADDI X6,-4
+RST X2,NP
+RST X3,NP
+// Mask out parity expected (to correctly calculate parity calc)
+// Reset X6 to &mem[70]
+// Reset other registers
+// X0 = E_LSW : w/o p0
+// X1 = E_MSW
+// X2 = 0
+// X3 = 1111_1110 -> 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = &mem[60]
+ADDI X3,-2
+AND X0,X3
+RST X3,NP
+// Calculate snydrome for p0
+// X0 = E_LSW
+// X1 = E_MSW
+// X2 = p0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = &mem[60]
+MOV X2,X0
+MOV X3,X1
+PAR X2,NP
+PAR X3,NP
+EOR X2,X3
+RST X3,NP
+// load and store in syndrome
+// X0 = E_LSW
+// X1 = E_MSW
+// X2 = p0_calculated
+// X3 = p0_recieved
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[74]
+// X7 = &mem[60]
+ADDI X6,3
+ADDI X6,1
+LDR X3,X6
+// Add FAIL or PASS in X2 to snydrome
+// load and store in syndrome
+// X0 = E_LSW
+// X1 = E_MSW
+// X2 = p0_calculated ^ p0_recieved = 0 0 0 0 0 0 0 s0
+// X3 = p0_recieved
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[74]
+// X7 = &mem[60]
+EOR X2,X3
+// Rotate for next parity check
+// the 7 right rotations is similar to shifting left by 1
+// X0 = E_LSW
+// X1 = E_MSW
+// X2 = 0 0 0 0 0 0 s0 0
+// X3 = p0_recieved
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[74]
+// X7 = &mem[60]
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+// Store snydrome back
+// X0 = E_LSW
+// X1 = E_MSW
+// X2 = 0 0 0 0 0 0 s0 0
+// X3 = p0_recieved
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[75]
+// X7 = &mem[60]
+ADDI X6,1
+STR X2,X6
+// Reset X2,X3,X6
+// X0 = E_LSW
+// X1 = E_MSW
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = &mem[60]
+ADDI X6,-4
+ADDI X6,-1
+RST X2,NP
+RST X3,NP
+// Mask out parity bits (remove them) from E_LSW and E_MSW
+// X0 = D_LSW
+// X1 = D_MSW
+// X2 = E_MSW MASK = 1111 1110
+// X3 = E_LSW MASK = 1110 1000
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = &mem[60]
+ADDI X2,-2
+AND X1,X2
+ADDI X3,-4
+ADDI X3,-4
+ADDI X3,-4
+ADDI X3,-4
+ADDI X3,-4
+ADDI X3,-4
+AND X0,X3
+// Reset registers X2,X3
+// X0 = D_LSW
+// X1 = D_MSW
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = &mem[60]
+RST X2,NP
+RST X3,NP
+// Store in D_LSW and D_MSW in mem[1:0] respectively.
+STR X0,X4
+ADDI X4,1
+STR X1,X4
+ADDI X4,-1
+// X0 = LSW = d4  d3  d2 0  d1 0  0  0
+// X1 = MSW = d11 d10 d9 d8 d7 d6 d5 0
+// reset everything
+RST X0,NP
+RST X1,NP
+RST X2,NP
+RST X3,NP
+RST X7,NP
+// ------------------- Inner sX syndrome loop
+// Masks for p8
+// X0 = 0
+// X1 = 0
+// X2 = 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = 0
+ADDI X3,-2
+// Calculate parities loop
+// --- Loop back here
+// .LOOP
+// X0 = 0
+// X1 = 0
+// X2 = 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0] - variable
+// X5 = &mem[30] - variable
+// X6 = &mem[70] - variable
+// X7=0
+MOV X0,X0
+MOV X0,X0
+RST X0,NP
+RST X1,NP
+// X0 briefly &mem[65] - counter for sX loop
+ADDI X0,1
+ROT X0,NP
+ROT X0,NP
+ADDI X0,1
+STR X7,X0
+RST X0,NP
+RST X7,NP
+// Load D_LSW and D_MSW
+// X0 = D_LSW
+// X1 = D_MSW
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = 0
+LDR X0,X4
+ADDI X4,1
+LDR X1,X4
+ADDI X4,-1
+// Mask out unneeded bits
+// X0 = pX needed bits in D_LSW
+// X1 = pX needed bits in D_MSW
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = 0
+AND X0,X2
+AND X1,X3
+// Get parities of D_LSW and D_MSW
+// X0 = Parity of D_LSW
+// X1 = Parity of D_MSW
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = 0
+PAR X0,NP
+PAR X1,NP
+// X0 = p8
+// Get pX = p_D_LSW ^ p_D_MSW in X0
+// X0 = pX_calculated
+// X1 = Parity of D_MSW
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = 0
+EOR X0,X1
+// Load recieved parity to compare to calculated parity
+// X6 = &mem[70:74]
+// Get pX = p_D_LSW ^ p_D_MSW in X0
+// X0 = pX_calculated
+// X1 = pX_recieved
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = 0
+LDR X1,X6
+// increase recieved parity pointer
+// X0 = pX_calculated
+// X1 = pX_recieved
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = 0
+ADDI X6,1
+// compare parities to either get a PASS=0 or FAIL=1
+// X0 = sX
+// X1 = pX_recieved
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = 0
+EOR X0,X1
+// load syndrome
+// X0 = sX
+// X1 = syndrome
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0] - variable
+// X5 = &mem[30] - variable 
+// X6 = &mem[71] - variable
+// X7 = &mem[75]
+ADDI X7,1
+ROT X7,NP
+ROT X7,NP
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,2
+LDR X1,X7
+// Merge Add FAIL or PASS in X0 to snydrome
+// X0 = sX
+// X1 = new_syndrome
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0] - variable
+// X5 = &mem[30] - variable
+// X6 = &mem[71] - variable
+// X7 = &mem[75]
+EOR X1,X0
+// Rotate for next parity check
+// X0 = sX
+// X1 = new_syndrome << 1
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0] - variable
+// X5 = &mem[30] - variable 
+// X6 = &mem[71] - variable
+// X7 = &mem[75]
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+// Store snydrome back
+// X0 = sX
+// X1 = new_syndrome << 1
+// X2 = e.g. 0 0 0 0 0 0 0 0 => D_LSW mask
+// X3 = e.g. 1 1 1 1 1 1 1 0 => D_MSW mask
+// X4 = &mem[0] - variable
+// X5 = &mem[30] - variable
+// X6 = &mem[71] - variable
+// X7 = &mem[75]
+STR X1,X7
+// At this point p8 should have been calculated (think of do while loop)
+// -- Setup for p4
+// X0 = 0
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = &mem[75]
+RST X0,NP
+RST X1,NP
+RST X2,NP
+RST X3,NP
+// load counter p4
+// X0 = p4 condition for looping
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = &mem[75]
+ADDI X7,1
+MOV X0,X7
+ADDI X7,-1
+LDR X0,X0
+// load branch offsets
+// offset = X1 + X7
+// X0 = p4 condition for looping
+// X1 = main branch offset for p4 at &mem[62]
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = &mem[75]
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-1
+LDR X1,X7
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,1
+// RECALL:
+// X0 = LSW = d4  d3  d2 0  d1 0  0  0
+// X1 = MSW = d11 d10 d9 d8 d7 d6 d5 0
+// mask for parity p4
+// X0 = p4 condition for looping
+// X1 = main branch offset for p4 at &mem[62]
+// X2 = 1 1 1 0 0 0 0 0 => D_LSW mask
+// X3 = 1 1 1 1 0 0 0 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = &mem[75]
+ADDI X2,3
+ADDI X2,3
+ADDI X2,1
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+MOV X3,X2
+ADDI X3,1
+ROT X3,NP
+// condition to loop for p4
+// Load counter from mem[65]
+// increase counter
+// store back counter at beginning of loop
+// X0 = p4 condition for looping
+// X1 = main branch offset for p4 at &mem[62]
+// X2 = 1 1 1 0 0 0 0 0 => D_LSW mask
+// X3 = 1 1 1 1 0 0 0 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = counter + 1
+// X7 goes from 0 to 1
+// X0 goes from 1 to 2
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-2
+LDR X7,X7
+ADDI X7,1
+MOV X0,X0
+CMP X7,X0
+BLT X1,X0
+// --- syndrome p4 branch - line 180
+// ------ Loop for p2
+// X0 = 0
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = counter+1
+RST X0,NP
+RST X1,NP
+RST X2,NP
+RST X3,NP
+RST X3,NP
+RST X3,NP
+RST X3,NP
+// Store current counter and reset X7
+// X0 = 0
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = &mem[75]
+ADDI X0,1
+ROT X0,NP
+ROT X0,NP
+ADDI X0,1
+STR X7,X0
+RST X0,NP
+RST X7,NP
+ADDI X7,1
+ROT X7,NP
+ROT X7,NP
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,2
+// load cond count for p2
+// X0 = p2 condition for looping
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = &mem[75]
+ADDI X7,2
+LDR X0,X7
+ADDI X7,-2
+// load branch offsets
+// offset = X1 + X7
+// X0 = p2 condition for looping
+// X1 = main branch offset for p2 at &mem[63]
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[72]
+// X7 = &mem[75]
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-4
+LDR X1,X7
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+// Masks for p2
+// RECALL:
+// LSW = d4  d3  d2 0  d1 0  0  0
+// MSW = d11 d10 d9 d8 d7 d6 d5 0
+// mask for parity p2
+// X0 = p2 condition for looping
+// X1 = main branch offset for p2 at &mem[63]
+// X2 = 1 1 0 0 1 0 0 0 => D_LSW mask
+// X3 = 1 1 0 0 1 1 0 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[72]
+// X7 = &mem[75]
+ADDI X2,3
+ROT X2,NP
+ROT X2,NP
+ADDI X2,3
+ADDI X2,3
+ADDI X2,2
+MOV X3,X2
+ADDI X3,3
+ADDI X3,1
+// condition to loop for p2
+// Load counter from mem[65]
+// counter has already been increased in setup for p4
+// counter gets stored back at beginning of loop
+// X0 = p2 condition for looping
+// X1 = main branch offset for p2 at &mem[63]
+// X2 = 1 1 0 0 1 0 0 0 => D_LSW mask
+// X3 = 1 1 0 0 1 1 0 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[72]
+// X7 = counter_p2
+// X7 goes from 1 to 2
+// X0 is at 3
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-2
+LDR X7,X7
+CMP X7,X0
+BLT X1,X0
+// ------ Loop for p1
+// X0 = 0
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = counter_p1
+RST X0,NP
+RST X1,NP
+RST X2,NP
+RST X3,NP
+RST X3,NP
+RST X3,NP
+// Store current counter and reset X7
+// X0 = 0
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = &mem[75]
+ADDI X0,1
+ROT X0,NP
+ROT X0,NP
+ADDI X0,1
+STR X7,X0
+RST X0,NP
+RST X7,NP
+ADDI X7,1
+ROT X7,NP
+ROT X7,NP
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,2
+// load cond count for p1
+// X0 = p1 condition for looping
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[71]
+// X7 = &mem[75]
+ADDI X7,3
+LDR X0,X7
+ADDI X7,-3
+// load branch offsets
+// offset = X1 + X0
+// X0 = p1 condition for looping
+// X1 = main branch offset for p1 at &mem[64]
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[72]
+// X7 = &mem[75]
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-3
+LDR X1,X7
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,2
+// mask for parity p4
+// Masks for p1
+// RECALL:
+// X0 = LSW = d4  d3  d2 0  d1 0  0  0
+// X1 = MSW = d11 d10 d9 d8 d7 d6 d5 0
+// mask for parity p1
+// X0 = p1 condition for looping
+// X1 = main branch offset for p1 at &mem[64]
+// X2 = 1 0 1 0 1 0 0 0 => D_LSW mask
+// X3 = 1 0 1 0 1 0 1 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[72]
+// X7 = &mem[75]
+ADDI X2,1
+ROT X2,NP
+ROT X2,NP
+ADDI X2,1
+ROT X2,NP
+ROT X2,NP
+ADDI X2,1
+ROT X2,NP
+MOV X3,X2
+ADDI X3,2
+// condition to loop for p1
+// X7 goes from 2 to 3
+// X0 is at 4
+// condition to loop for p1
+// Load counter from mem[65]
+// counter has already been increased in setup for p4
+// counter gets stored back at beginning of loop
+// X0 = p1 condition for looping
+// X1 = main branch offset for p1 at &mem[64]
+// X2 = 1 0 1 0 1 0 0 0 => D_LSW mask
+// X3 = 1 0 1 0 1 0 1 0 => D_MSW mask
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[72]
+// X7 = counter_p1
+// X7 goes from 2 to 3
+// X0 is at 4
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-2
+LDR X7,X7
+CMP X7,X0
+BLT X1,X0
+// ----------- exit sX syndrome loop
+// X0 = 0
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = 0
+// X7 = 0
+RST X0,NP
+RST X1,NP
+RST X2,NP
+RST X3,NP
+RST X6,NP
+RST X7,NP
+// Load syndrome into X0
+// X0 = 0 0 s0 s8 s4 s2 s1 0
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[75]
+// X7 = 0
+ADDI X6,1
+ROT X6,NP
+ROT X6,NP
+ADDI X6,3
+ADDI X6,3
+ADDI X6,3
+ADDI X6,2
+LDR X0,X6
+// Store D_LSW_MSW and E_LSW_MSW ** address pointers **(counters) at mem[83] and mem[84] respectively.
+// X0 = 0 0 s0 s8 s4 s2 s1 0
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = 0
+ADDI X6,3
+ADDI X6,3
+ADDI X6,2
+STR X4,X6
+ADDI X6,1
+STR X5,X6
+ADDI X6,-4
+ADDI X6,-4
+ADDI X6,-4
+ADDI X6,-2
+// Move D_LSW and D_MSW to X4 and X5 respectively
+// X0 = 0 0 s0 s8 s4 s2 s1 0
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = D_LSW
+// X5 = D_MSW
+// X6 = &mem[70]
+// X7 = 0
+MOV X2,X4
+ADDI X4,1
+MOV X3,X4
+ADDI X4,-1
+MOV X4,X2
+MOV X5,X3
+RST X2,NP
+RST X3,NP
+// At this point X2,X3
+// rotate to get syndrome in place
+// X0 = 0 0 0 s0 s8 s4 s2 s1
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = D_LSW
+// X5 = D_MSW
+// X6 = &mem[70]
+// X7 = 0
+ROT X0,NP
+// Reset regs
+// X0 = 0 0 0 s0 s8 s4 s2 s1
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+RST X1,NP
+RST X2,NP
+RST X3,NP
+RST X4,NP
+RST X5,NP
+// if X0 == 0
+// do nothing, leave X2 = 0
+// else if X0 == 16
+// X0 = 0 0 0 s0 s8 s4 s2 s1
+// X1 = 16 => syndrome count comparison
+// X2 = error count F1 F0
+// X3 = 2
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+// offset = 2 = (X4<<2) + X3
+ADDI X1,3
+ADDI X1,3
+ADDI X1,3
+ADDI X1,3
+ADDI X1,3
+ADDI X1,1
+ADDI X3,2
+CMP X0,X1
+BNE X4,X3
+// X2 = 0b01 => 1 error
+ADDI X2,1
+// else if X0 > 16
+// X0 = 0 0 0 s0 s8 s4 s2 s1
+// X1 = 16 => syndrome count comparison
+// X2 = error count F1 F0
+// X3 = 2
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+// offset = 2
+CMP X0,X1
+BLT X4,X3
+// X2 = 1
+ADDI X2,1
+// else if X0 < 16
+// X0 = 0 0 0 s0 s8 s4 s2 s1
+// X1 = 16 => syndrome count comparison
+// X2 = error count F1 F0
+// X3 = 2
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+// offset = 2
+CMP X1,X0
+BLT X4,X3
+// X2 = 2
+ADDI X2,2
+// EXIT Error count if else conditions
+// X0 = 0 0 0 s0 s8 s4 s2 s1
+// X1 = 0
+// X2 = error count F1 F0
+// X3 = 2
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+RST X1,NP
+// Mask out syndrome
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = 1 1 1 0 1  1  1  1
+// X2 = error count F1 F0
+// X3 = 2
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+ADDI X1,1
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ADDI X3,-3
+EOR X1,X3
+ADDI X3,3
+AND X0,X1
+// Reset regs
+// Set X1 to be mask for where bit error is located after branch
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = 0 0 0 0 0 0 0 0
+// X2 = error count F1 F0
+// X3 = 0
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+RST X3,NP
+RST X1,NP
+// ADDI X1,1
+// rotate X1, X0 times in place
+// NOTE: 7 right rotations is similar to rotating one to the left
+// NOTE: X3 will have the counter for the errors (X2)
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = 0 0 0 0 0 0 0 0
+// X2 = error count F1 F0
+// X3 = 0
+// X4 = 0
+// X5 = 1 -- counter
+// X6 = &mem[70]
+// X7 = 0
+ADDI X5,1
+// if (F1 F0) != 1
+// Then we have 0 errors or a 2 bit error, no need to loop
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = 0 0 0 0 0 0 0 0
+// X2 = error count F1 F0
+// X3 = 21
+// X4 = 0
+// X5 = 1 -- compare F1 F0 to 1
+// X6 = &mem[70]
+// X7 = 0
+// offset = 21 = (X4 << 2) + X3 = 0 + 21
+ADDI X3,3
+ADDI X3,3
+ADDI X3,3
+ADDI X3,3
+ADDI X3,3
+ADDI X3,2
+CMP X5,X2
+BNE X4,X3
+// else
+//    for ( counter < syndrome ==> X3 < X0)
+// Reset reg X3
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = 0 0 0 0 0 0 0 1
+// X2 = error count F1 F0
+// X3 = 0 
+// X4 = 0
+// X5 = 0 => counter
+// X6 = &mem[70]
+// X7 = 0
+ADDI X1,1
+RST X5,NP
+RST X3,NP
+ADDI X3,-3
+ADDI X3,-3
+ADDI X3,-3
+// .LOOP shift bit error location mask into position
+// Shift X1 to the left once
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = 1 << 1
+// X2 = error count F1 F0
+// X3 = -9
+// X4 = 0
+// X5 = counter++
+// X6 = &mem[70]
+// X7 = 0
+// offset = -9 = X4<<2 + X3
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+ADDI X5,1
+CMP X5,X0
+BLT X4,X3
+// .Skipped Loop or finished loop
+// Load D_LSW and D_MSW
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = mask for bit error
+// X2 = error count F1 F0
+// X3 = &mem[83] ==> D_LSW_MSW ==> 0
+// X4 = &mem[0] ==> D_LSW
+// X5 = D_MSW
+// X6 = &mem[70]
+// X7 = 0
+RST X3,NP
+ADDI X3,1
+ROT X3,NP
+ROT X3,NP
+ADDI X3,3
+ADDI X3,3
+ADDI X3,3
+ADDI X3,3
+ADDI X3,3
+ADDI X3,3
+ADDI X3,1
+LDR X4,X3
+ADDI X4,1
+LDR X5,X4
+ADDI X4,-1
+LDR X4,X4
+RST X3,NP
+// Determine if correction will be in D_LSW or D_MSW
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = mask for bit error
+// X2 = error count F1 F0
+// X3 = 7
+// X4 = D_LSW
+// X5 = D_MSW
+// X6 = &mem[70]
+// X7 = 0
+ADDI X3,3
+ADDI X3,3
+ADDI X3,1
+// error bit in D_MSW
+// if (error bit loc > 7)
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = mask for bit error
+// X2 = error count F1 F0
+// X3 = 7
+// X4 = D_LSW
+// X5 = D_MSW
+// X6 = &mem[70]
+// X7 = 0
+CMP X0,X3
+BLT X7,X3
+EOR X5,X1
+// error bit in D_LSW
+// else if (error bit loc < 7)
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = mask for bit error
+// X2 = error count F1 F0
+// X3 = 7
+// X4 = D_LSW
+// X5 = D_MSW
+// X6 = &mem[70]
+// X7 = 0
+// No Ops
+MOV X0,X0
+MOV X0,X0
+MOV X0,X0
+MOV X0,X0
+MOV X0,X0
+CMP X3,X0
+BLT X7,X3
+// .LSW
+EOR X4,X1
+// No Ops
+MOV X0,X0
+MOV X0,X0
+MOV X0,X0
+MOV X0,X0
+MOV X0,X0
+// .EXIT Fix bit error loop
+// Move D_MSW and D_LSW
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = error count F1 F0
+// X2 = D_LSW
+// X3 = D_MSW
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+MOV X1,X2
+MOV X2,X4
+MOV X3,X5
+RST X4,NP
+RST X5,NP
+RST X7,NP
+// Set LSW in place
+// X0 = 0
+// X1 = error count F1 F0
+// X2 = D_LSW
+// X3 = D_MSW
+// X4 = 0 d4 d3 d2 d1 0 0 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 1 1 1 0 0 0 0 0 ==> d4 d3 d2 0 0 0 0 0
+RST X0,NP
+ADDI X7,3
+ADDI X7,3
+ADDI X7,1
+ROT X7,NP
+ROT X7,NP
+ROT X7,NP
+AND X7,X2
+ROT X7,NP
+ADDI X4,3
+ADDI X4,3
+ADDI X4,2
+AND X4,X2
+MOV X0,X7
+EOR X4,X0
+// Set D_LSW in place
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = error count F1 F0
+// X2 = 0 0 0 0 d4 d3 d2 d1
+// X3 = D_MSW
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+MOV X2,X4
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+RST X4,NP
+RST X7,NP
+// Set MSW in place
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = error count F1 F0
+// X2 = 0 0 0 0 d4 d3 d2 d1
+// X3 = D_MSW = d8 d7 d6 d5 0 d11 d10 d9
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+ROT X3,NP
+ROT X3,NP
+ROT X3,NP
+ROT X3,NP
+ROT X3,NP
+// Mask out MSW
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = error count F1 F0
+// X2 = 0 0 0 0 d4 d3 d2 d1
+// X3 = D_MSW = d8 d7 d6 d5 0 d11 d10 d9
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = d8 d7 d6 d5 0 0 0 0
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-4
+AND X7,X3
+// Merge with LSW
+// X0 = 0
+// X1 = error count F1 F0
+// X2 = d8 d7 d6 d5 d4 d3 d2 d1
+// X3 = D_MSW = d8 d7 d6 d5 0 d11 d10 d9
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = d8 d7 d6 d5 0 0 0 0
+MOV X0,X7
+EOR X2,X0
+// Mask out MSW
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = error count F1 F0
+// X2 = D_LSW = d8 d7 d6 d5 d4 d3 d2 d1
+// X3 = D_MSW = 0 0 0 0 0 d11 d10 d9
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0 0 0 0 0 d11 d10 d9
+RST X7,NP
+ADDI X7,3
+ADDI X7,3
+ADDI X7,1
+AND X7,X3
+MOV X3,X7
+// Merge with X3 = MSW and X1 = 0 0 0 0 0 0 F1 F0
+// X0 = 0 0 0 0 s8 s4 s2 s1
+// X1 = error count F1 F0
+// X2 = D_LSW = d8 d7 d6 d5 d4 d3 d2 d1
+// X3 = D_MSW = F1 F0 0  0  0  d11 d10 d9
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0 0 0 0 0 d11 d10 d9
+ROT X1,NP
+ROT X1,NP
+EOR X3,X1
+// reset regs
+// X0 = 0
+// X1 = 0
+// X2 = D_LSW = d8 d7 d6 d5 d4 d3 d2 d1
+// X3 = D_MSW = F1 F0 0  0  0  d11 d10 d9
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = 0
+RST X0,NP
+RST X1,NP
+RST X7,NP
+// Store LSW and MSW into mem[0] and mem[1]
+// X0 = 0
+// X0 = 0
+// X1 = 0
+// X2 = D_LSW = d8 d7 d6 d5 d4 d3 d2 d1
+// X3 = D_MSW = F1 F0 0  0  0  d11 d10 d9
+// X4 = 0
+// X5 = 0
+// X6 = &mem[70]
+// X7 = &mem[83]
+ADDI X7,1
+ROT X7,NP
+ROT X7,NP
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,1
+// Load address pointers to Encoded and Decoded msgs
+// X0 = outer loop counter => outer loop counter + 1
+// X0 = 0
+// X1 = 0
+// X2 = D_LSW = d8 d7 d6 d5 d4 d3 d2 d1
+// X3 = D_MSW = F1 F0 0  0  0  d11 d10 d9
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = &mem[82]
+LDR X4,X7
+ADDI X7,1
+LDR X5,X7
+ADDI X7,-2
+LDR X0,X7
+ADDI X0,1
+STR X0,X7
+// Store decoded msg (D_LSW and D_MSW) into their spots
+// X0 = outer loop counter
+// X1 = 0
+// X2 = 0
+// X3 = 0
+// X4 = &mem[0]
+// X5 = &mem[30]
+// X6 = &mem[70]
+// X7 = &mem[70]
+STR X2,X4
+ADDI X4,1
+STR X3,X4
+ADDI X4,-1
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-4
+// Increase address pointers
+// X0 = outer loop counter+1
+// X1 = 15
+// X2 = shifted offset
+// X3 = regular offset
+// X4 = &mem[2]
+// X5 = &mem[32]
+// X6 = &mem[70]
+// X7 = &mem[60]
+// offset = (X2 << 2) + X3
+ADDI X4,2
+ADDI X5,2
+ADDI X1,3
+ADDI X1,3
+ADDI X1,3
+ADDI X1,3
+ADDI X1,3
+ADDI X7,-4
+LDR X2,X7
+ADDI X7,1
+LDR X3,X7
+ADDI X7,-4
+ADDI X7,-3
+RST X6,NP
+MOV X6,X7
+ADDI X6,3
+ADDI X6,3
+ADDI X6,3
+ADDI X6,1
+CMP X0,X1
+BLT X2,X3

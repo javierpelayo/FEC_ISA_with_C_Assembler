@@ -1,0 +1,485 @@
+// -------------------- Calculate p8
+// Reset registers
+
+RST X0,NP
+RST X1,NP
+RST X2,NP
+RST X3,NP
+RST X4,NP
+RST X5,NP
+RST X6,NP
+RST X7,NP
+
+// Set Load, Store and branch pointers
+// X4 = mem[0]
+// X5 = mem[30]
+// X7 = mem[60]
+
+ADDI X5,1
+ROT X5,NP
+ROT X5,NP
+ROT X5,NP
+ADDI X5,-2
+ADDI X7,1
+ROT X7,NP
+ROT X7,NP
+ADDI X7,-4
+
+RST X0,NP
+RST X1,NP
+RST X2,NP
+RST X3,NP
+
+// Load decoded data into regs
+// X0 = 0 0 0 0 0 d11 d10 d9
+// X1 = d8 d7 d6 d5 d4 d3 d2 d1
+
+LDR X1,X4
+ADDI X4,1
+LDR X0,X4
+ADDI X4,-1
+
+// -- Set bits ready for reduction XOR for p8
+// -- bits needed: d11 d10 d9 d8 d7 d6 d5
+
+// X0 = d11 d10 d9 ? ? ? ? ?
+
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+
+// Mask out X0
+// X2 = 1 1 1 0 0 0 0 0
+
+ADDI X2,3
+ADDI X2,3
+ADDI X2,1
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+AND X0,X2
+RST X2,NP
+
+// X1 = 0 0 0 d8 d7 d6 d5 0
+// set up mask, X2 = 1 1 1 1 0 0 0 0
+
+ADDI X2,3
+ADDI X2,3
+ADDI X2,3
+ADDI X2,3
+ADDI X2,3
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+AND X1,X2
+ROT X1,NP
+ROT X1,NP
+ROT X1,NP
+
+// Merge MSW and LSW into one register
+// X0 = d11 d10 d9 d8 d7 d6 d5 0
+
+EOR X0,X1
+
+// Parity bit for p8
+// X1 = 0 0 0 0 0 0 0 p8
+
+MOV X1,X0
+PAR X1,NP
+
+// Mask out parity bit and merge with X0
+// X0 = d11 d10 d9 d8 d7 d6 d5 p8
+
+RST X2,NP
+RST X3,NP
+ADDI X2,1
+AND X1,X2
+EOR X0,X1
+
+// Store MSW result in mem[31]
+// X0 = d11 d10 d9 d8 d7 d6 d5 p8
+
+ADDI X5,1
+STR X0,X5
+ADDI X5,-1
+
+// ----------------- Calculate p4
+
+// Mask out upper 4 bits of X0
+// X2 = 1 1 1 1 0 0 0 0
+// X0 = d11 d10 d9 d8 0 0 0 0
+
+RST X1,NP
+RST X2,NP
+RST X3,NP
+
+ADDI X2,-4
+ADDI X2,-4
+ADDI X2,-4
+ADDI X2,-4
+AND X0,X2
+
+// Load LSW 
+// REPLACED -- X3 = &mem[0]
+// X1 = d8 d7 d6 d5 d4 d3 d2 d1
+
+LDR X1,X4
+
+// MASK out needed bits
+// X2 = 0 0 0 0 1 1 1 0
+// X1 = 0 0 0 0 d4 d3 d2 0
+
+RST X2,NP
+ADDI X2,3
+ADDI X2,3
+ADDI X2,3
+ADDI X2,3
+ADDI X2,2
+AND X1,X2
+
+// Merge MSW and LSW
+// X1 = d11 d10 d9 d8 d4 d3 d2 0
+
+EOR X1,X0
+MOV X0,X1
+
+// Parity bit for p4
+
+PAR X1,NP
+
+// Mask out X0 and merge with parity bit
+// X2 = 0   0   0  0  1  1  1  0
+// X0 = d11 d10 d9 d8 d4 d3 d2 0
+// V
+// X0 = 0 0 0 0 d4 d3 d2 p4
+
+RST X2,NP
+RST X3,NP
+
+ADDI X2,3
+ADDI X2,3
+ADDI X2,3
+ADDI X2,3
+ADDI X2,2
+AND X0,X2
+EOR X0,X1
+
+// Rotate in place 
+
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+
+// Store LSW result in mem[30]
+// X0 = d4 d3 d2 p4 0 0 0 0
+// REPLACED -- X3 = &mem[30]
+
+STR X0,X5
+
+// ----------------- Calculate p2
+// mem[30] = d11 d10 d9 d8 d7 d6 d5 p8
+// mem[31] = d4  d3  d2 p4 0  0  0  0
+
+RST X0,NP
+RST X1,NP
+RST X2,NP
+RST X3,NP
+
+// Load MSW mem[31] into X0
+// REPLACED -- X3 = &mem[31]
+
+ADDI X5,1
+LDR X0,X5
+ADDI X5,-1
+
+// Mask out needed bits for MSW
+// X2 = 1 1 0 0 1 1 0 0
+// X0 = d11 d10 0 0 d7 d6 0 0
+
+RST X3,NP
+ADDI X2,3
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ADDI X2,3
+ROT X2,NP
+ROT X2,NP
+AND X0,X2
+
+// Load LSW into X1
+// X1 = d8 d7 d6 d5 d4 d3 d2 d1
+// REPLACED -- X3 = &mem[0]
+
+RST X2,NP
+RST X3,NP
+
+LDR X1,X4
+
+// Mask out required bits
+// X2 = 0 0 0 0 1 1 0 1
+// X1 = 0 0 0 0 d4 d3 0 d1
+
+ADDI X2,3
+ADDI X2,3
+ADDI X2,3
+ADDI X2,3
+ADDI X2,1
+AND X1,X2
+
+// Separate LSW
+// X3 = 0 0 d4 d3 0 0 0  0
+// X2 = 0 0 0  0  0 0 d1 0
+// X1 = 0 0 d4 d3 0 0 d1 0
+
+ADDI X2,-1
+MOV X3,X2
+AND X3,X1
+RST X2,NP
+ADDI X2,1
+AND X2,X1
+
+ROT X3,NP
+ROT X3,NP
+ROT X3,NP
+ROT X3,NP
+ROT X3,NP
+ROT X3,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+ROT X2,NP
+
+EOR X2,X3
+MOV X1,X2
+
+// Merge with MSW
+// X0 = d11 d10 d4 d3 d7 d6 d1 0
+
+EOR X0,X1
+MOV X1,X0
+
+// parity for p2
+
+PAR X0,NP
+
+// mask out required bits
+// X1 = 0 0 0 0 0 0 d1 0
+// V
+// X1 = 0 0 0 0 0 0 d1 p2
+
+RST X2,NP
+ADDI X2,2
+AND X1,X2
+
+// merge d1 and p2
+// X0 = 0 0 0 0 d1 p2 0 0
+
+EOR X0,X1
+
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+
+// Load mem[30] and merge
+// REPLACED -- X3 = &mem[30]
+// X1 = d4 d3 d2 p4 0 0 0 0
+
+RST X2,NP
+RST X3,NP
+LDR X1,X5
+
+EOR X0,X1
+
+// store LSW X0 = d4 d3 d2 p4 d1 p2 0 0
+// REPLACED -- X3 = &mem[30]
+
+STR X0,X5
+
+// ----------------- Calculate p1
+
+// MASK out LSW
+// X2 = 1  0 1  0 1  0 0 0
+// X1 = d4 0 d2 0 d1 0 0 0
+
+RST X1,NP
+RST X2,NP
+RST X3,NP
+
+ADDI X2,1
+ROT X2,NP
+ROT X2,NP
+ADDI X2,1
+ROT X2,NP
+ROT X2,NP
+ADDI X2,1
+ROT X2,NP
+AND X0,X2
+MOV X1,X0
+
+// Load MSW 
+// REPLACED -- X3 = &mem[31]
+
+RST X3,NP
+ADDI X5,1
+LDR X0,X5
+ADDI X5,-1
+
+// Mask out MSW
+// X2 = 1 0 1 0 1 0 1 0
+// X0 = d11 0 d9 0 d7 0 d5 0
+
+ROT X2,NP
+ADDI X2,1
+ROT X2,NP
+
+AND X0,X2
+
+// Merge
+// X0 = d11 d4 d9 d2 d7 d1 d5 0
+
+ROT X1,NP
+EOR X0,X1
+
+// parity for p1
+
+PAR X0,NP
+
+// rotate in place
+
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+ROT X0,NP
+
+// Load LSW
+// REPLACED -- X3 = &mem[30]
+
+LDR X1,X5
+
+// merge
+// X0 = d4 d3 d2 p4 d1 p2 p1 0
+
+EOR X0,X1
+
+// store LSW X0 = d4 d3 d2 p4 d1 p2 p1 0
+// REPLACED -- X3 = &mem[30]
+
+STR X0,X5
+
+// ----------------- Calculate p0
+
+RST X1,NP
+RST X2,NP
+RST X3,NP
+
+// get parity for p0_1
+
+PAR X0,NP
+
+// mask out p0_1
+// Will be in LSB of X1
+// X1 = 0 0 0 0 0 0 0 p0_1
+
+RST X2,NP
+ADDI X2,1
+AND X0,X2
+MOV X1,X0
+
+// Load MSW into X0
+// X0 = d11 d10 d9 d7 d6 d5 p8
+// REPLACED -- X3 = &mem[31]
+
+ADDI X5,1
+LDR X0,X5
+ADDI X5,-1
+
+// parity bit for p0_0
+
+PAR X0,NP
+
+// Mask out parity bit
+// X0 = 0 0 0 0 0 0 0 p0_0
+
+RST X2,NP
+ADDI X2,1
+AND X0,X2
+
+// Calculate p0
+// X0 = 0 0 0 0 0 0 0 p0
+
+EOR X0,X1
+
+// Load LSW and merge and store back in mem[30]
+// REPLACED -- X3 = &mem[30]
+
+LDR X1,X5
+EOR X0,X1
+STR X0,X5
+
+// --------- Branch loop condition
+// increase memory pointer address registers
+// to get next msg, X4 and X5
+
+RST X0,NP
+RST X1,NP
+RST X2,NP
+RST X3,NP
+ADDI X4,2
+ADDI X5,2
+
+// Counter is at X7 = &mem[82]
+
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,3
+ADDI X7,1
+
+LDR X0,X7
+ADDI X0,1
+STR X0,X7
+
+// Get branch offsets into X2 and X3, these will be added offset = X2+X3
+// RECALL: Branch offsets are at mem[60:79]
+
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-4
+ADDI X7,-2
+
+LDR X2,X7
+ADDI X7,1
+LDR X3,X7
+ADDI X7,-1
+
+// Max loop count should be 15
+
+ADDI X1,3
+ADDI X1,3
+ADDI X1,3
+ADDI X1,3
+ADDI X1,3
+
+CMP X0,X1
+BLT X2,X3
+
+
+
+
