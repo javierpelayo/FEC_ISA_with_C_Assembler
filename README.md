@@ -1,15 +1,16 @@
 
 # FEC Instruction Set Architecture with C Assembler
 
-![ISA Processor](./processor-diagram.jpg)
-
 This processor is specifically optimized for Forward Error Correction (FEC) and includes a custom instruction set architecture (ISA) designed for this purpose. FEC is commonly used in radio communications and other systems that operate over lossy links, where retransmitting lost data is expensive, difficult, or impractical.
+
+![ISA Processor](./processor-diagram.jpg)
 
 A particularly interesting example is the Voyager probe, one of humanity’s longest-running computational systems. Voyager passed beyond the heliosphere last year and continues to transmit scientific data back to Earth. A more familiar example is satellite radio: services such as SiriusXM can tolerate several seconds of signal loss—such as when a vehicle passes under a highway overpass—without interrupting the audio stream.
 
+![FEC](./fec-diagram.png)
+
 SiriusXM receivers use specialized chips for this purpose, historically including the STA210/240. These chips represent a more advanced implementation of the same general concept: specialized hardware designed to efficiently perform the error-correction computations required for reliable communication over lossy links.
 
-![FEC](./fec-diagram.png)
 
 ### Machine OP-Code Format - 3 types:
 
