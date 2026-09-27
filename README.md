@@ -72,7 +72,7 @@ RST X0,NP       // X0 = 0 (reset register to 0)
 ### Control Unit Codes
 
 
-| OP Codes    | RegSize  | RegWrite | ALUSrc1 | ALUSrc2 | ALUOp[3] | Branch | MemWrite | Mem2Reg[2]  |
+| OPCodes++++ | RegSize  | RegWrite | ALUSrc1 | ALUSrc2 | ALUOp[3] | Branch | MemWrite | Mem2Reg[2]  |
 |-------------|----------|----------|---------|---------|----------|--------|----------|-------------|
 | 000 - MOV   | 0        | 1        | 0       | 1       | 110      | 0      | 0        | 10          |
 | 001 - ADDI  | X        | 1        | 1       | 0       | 000      | 0      | 0        | 10          | 
